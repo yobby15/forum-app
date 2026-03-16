@@ -17,8 +17,37 @@ const fakeUser = {
   avatar: 'https://ui-avatars.com/api/?name=Cypress+Tester',
 };
 
+const interceptLoginSuccess = () => {
+  cy.intercept('POST', '**/login', {
+    statusCode: 200,
+    body: { status: 'success', message: 'ok', data: { token: fakeToken } },
+  }).as('loginRequest');
+
+  cy.intercept('GET', '**/users/me', {
+    statusCode: 200,
+    body: { status: 'success', message: 'ok', data: { user: fakeUser } },
+  }).as('profileRequest');
+
+  cy.intercept('GET', '**/threads', {
+    statusCode: 200,
+    body: { status: 'success', message: 'ok', data: { threads: [] } },
+  }).as('threadsRequest');
+
+  cy.intercept('GET', '**/users', {
+    statusCode: 200,
+    body: { status: 'success', message: 'ok', data: { users: [] } },
+  }).as('usersRequest');
+};
+
 describe('Login Flow', () => {
   beforeEach(() => {
+    cy.clearLocalStorage();
+
+    cy.intercept('GET', '**/users/me', {
+      statusCode: 401,
+      body: { status: 'fail', message: 'Unauthorized' },
+    }).as('preloadRequest');
+
     cy.visit('/login');
   });
 
@@ -42,25 +71,7 @@ describe('Login Flow', () => {
   });
 
   it('should berhasil login dengan kredensial yang valid dan redirect ke halaman utama', () => {
-    cy.intercept('POST', '**/login', {
-      statusCode: 200,
-      body: { status: 'success', message: 'ok', data: { token: fakeToken } },
-    }).as('loginRequest');
-
-    cy.intercept('GET', '**/users/me', {
-      statusCode: 200,
-      body: { status: 'success', message: 'ok', data: { user: fakeUser } },
-    }).as('profileRequest');
-
-    cy.intercept('GET', '**/threads', {
-      statusCode: 200,
-      body: { status: 'success', message: 'ok', data: { threads: [] } },
-    }).as('threadsRequest');
-
-    cy.intercept('GET', '**/users', {
-      statusCode: 200,
-      body: { status: 'success', message: 'ok', data: { users: [] } },
-    }).as('usersRequest');
+    interceptLoginSuccess();
 
     cy.get('input[placeholder="Masukkan email Anda"]').type('cypress@test.com');
     cy.get('input[placeholder="Masukkan password"]').type('password123');
@@ -92,25 +103,7 @@ describe('Login Flow', () => {
   });
 
   it('should dapat logout setelah berhasil login', () => {
-    cy.intercept('POST', '**/login', {
-      statusCode: 200,
-      body: { status: 'success', message: 'ok', data: { token: fakeToken } },
-    }).as('loginRequest');
-
-    cy.intercept('GET', '**/users/me', {
-      statusCode: 200,
-      body: { status: 'success', message: 'ok', data: { user: fakeUser } },
-    }).as('profileRequest');
-
-    cy.intercept('GET', '**/threads', {
-      statusCode: 200,
-      body: { status: 'success', message: 'ok', data: { threads: [] } },
-    }).as('threadsRequest');
-
-    cy.intercept('GET', '**/users', {
-      statusCode: 200,
-      body: { status: 'success', message: 'ok', data: { users: [] } },
-    }).as('usersRequest');
+    interceptLoginSuccess();
 
     cy.get('input[placeholder="Masukkan email Anda"]').type('cypress@test.com');
     cy.get('input[placeholder="Masukkan password"]').type('password123');
@@ -121,6 +114,7 @@ describe('Login Flow', () => {
     cy.url().should('eq', `${Cypress.config('baseUrl')}/`);
 
     cy.get('button[title="Keluar"]').should('be.visible').click();
+
     cy.url().should('include', '/login');
   });
 });
