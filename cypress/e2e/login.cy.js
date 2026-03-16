@@ -9,6 +9,14 @@
  * - should dapat logout setelah berhasil login
  */
 
+const fakeToken = 'fake-token-cypress-test-123';
+const fakeUser = {
+  id: 'user-cypress-1',
+  name: 'Cypress Tester',
+  email: 'cypress@test.com',
+  avatar: 'https://ui-avatars.com/api/?name=Cypress+Tester',
+};
+
 describe('Login Flow', () => {
   beforeEach(() => {
     cy.visit('/login');
@@ -23,7 +31,6 @@ describe('Login Flow', () => {
 
   it('should menampilkan pesan error validasi saat submit form kosong', () => {
     cy.get('button[type="submit"]').click();
-
     cy.contains('Email wajib diisi').should('be.visible');
   });
 
@@ -31,40 +38,89 @@ describe('Login Flow', () => {
     cy.get('input[placeholder="Masukkan email Anda"]').type('user@test.com');
     cy.get('input[placeholder="Masukkan password"]').type('123');
     cy.get('button[type="submit"]').click();
-
     cy.contains('Password minimal 6 karakter').should('be.visible');
   });
 
   it('should berhasil login dengan kredensial yang valid dan redirect ke halaman utama', () => {
-    cy.get('input[placeholder="Masukkan email Anda"]').type(Cypress.env('TEST_EMAIL') || 'dimasmd@example.com');
-    cy.get('input[placeholder="Masukkan password"]').type(Cypress.env('TEST_PASSWORD') || 'password123');
+    cy.intercept('POST', '**/login', {
+      statusCode: 200,
+      body: { status: 'success', message: 'ok', data: { token: fakeToken } },
+    }).as('loginRequest');
+
+    cy.intercept('GET', '**/users/me', {
+      statusCode: 200,
+      body: { status: 'success', message: 'ok', data: { user: fakeUser } },
+    }).as('profileRequest');
+
+    cy.intercept('GET', '**/threads', {
+      statusCode: 200,
+      body: { status: 'success', message: 'ok', data: { threads: [] } },
+    }).as('threadsRequest');
+
+    cy.intercept('GET', '**/users', {
+      statusCode: 200,
+      body: { status: 'success', message: 'ok', data: { users: [] } },
+    }).as('usersRequest');
+
+    cy.get('input[placeholder="Masukkan email Anda"]').type('cypress@test.com');
+    cy.get('input[placeholder="Masukkan password"]').type('password123');
     cy.get('button[type="submit"]').click();
 
-    cy.url().should('eq', `${Cypress.config('baseUrl')  }/`);
+    cy.wait('@loginRequest');
+    cy.wait('@profileRequest');
+    cy.url().should('eq', `${Cypress.config('baseUrl')}/`);
     cy.get('nav').should('be.visible');
   });
 
   it('should menampilkan error saat login dengan kredensial yang salah', () => {
+    cy.intercept('POST', '**/login', {
+      statusCode: 400,
+      body: { status: 'fail', message: 'email atau password salah' },
+    }).as('loginFailed');
+
+    const alertStub = cy.stub();
+    cy.on('window:alert', alertStub);
+
     cy.get('input[placeholder="Masukkan email Anda"]').type('salah@example.com');
     cy.get('input[placeholder="Masukkan password"]').type('passwordsalah');
     cy.get('button[type="submit"]').click();
 
-    cy.on('window:alert', (text) => {
-      expect(text).to.include('salah');
+    cy.wait('@loginFailed');
+    cy.then(() => {
+      expect(alertStub).to.have.been.calledWithMatch(/salah/i);
     });
   });
 
   it('should dapat logout setelah berhasil login', () => {
-    cy.get('input[placeholder="Masukkan email Anda"]').type(Cypress.env('TEST_EMAIL') || 'dimasmd@example.com');
-    cy.get('input[placeholder="Masukkan password"]').type(Cypress.env('TEST_PASSWORD') || 'password123');
+    cy.intercept('POST', '**/login', {
+      statusCode: 200,
+      body: { status: 'success', message: 'ok', data: { token: fakeToken } },
+    }).as('loginRequest');
+
+    cy.intercept('GET', '**/users/me', {
+      statusCode: 200,
+      body: { status: 'success', message: 'ok', data: { user: fakeUser } },
+    }).as('profileRequest');
+
+    cy.intercept('GET', '**/threads', {
+      statusCode: 200,
+      body: { status: 'success', message: 'ok', data: { threads: [] } },
+    }).as('threadsRequest');
+
+    cy.intercept('GET', '**/users', {
+      statusCode: 200,
+      body: { status: 'success', message: 'ok', data: { users: [] } },
+    }).as('usersRequest');
+
+    cy.get('input[placeholder="Masukkan email Anda"]').type('cypress@test.com');
+    cy.get('input[placeholder="Masukkan password"]').type('password123');
     cy.get('button[type="submit"]').click();
 
-    cy.url().should('eq', `${Cypress.config('baseUrl')  }/`);
-
-    cy.get('nav').should('be.visible');
+    cy.wait('@loginRequest');
+    cy.wait('@profileRequest');
+    cy.url().should('eq', `${Cypress.config('baseUrl')}/`);
 
     cy.get('button[title="Keluar"]').should('be.visible').click();
-
     cy.url().should('include', '/login');
   });
 });
