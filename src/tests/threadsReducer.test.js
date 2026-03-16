@@ -44,7 +44,7 @@ describe('threadsReducer', () => {
 
     const nextState = threadsReducer(previousState, action);
 
-    expect(nextState).toEqual([]);
+    expect(nextState).toEqual(['wrong']);
     expect(Array.isArray(nextState)).toBe(true);
   });
 
