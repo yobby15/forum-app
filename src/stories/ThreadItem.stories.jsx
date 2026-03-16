@@ -9,7 +9,7 @@ export default {
   title: 'Components/ThreadItem',
   component: ThreadItem,
   decorators: [
-    (Story) => (
+    () => (
       <MemoryRouter>
         <div style={{ maxWidth: '600px', padding: '20px', background: '#f8fafc' }}>
           <Story />

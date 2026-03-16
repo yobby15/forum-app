@@ -40,7 +40,7 @@ describe('Login Flow', () => {
     cy.get('input[placeholder="Masukkan password"]').type(Cypress.env('TEST_PASSWORD') || 'password123');
     cy.get('button[type="submit"]').click();
 
-    cy.url().should('eq', Cypress.config('baseUrl') + '/');
+    cy.url().should('eq', `${Cypress.config('baseUrl')  }/`);
     cy.get('nav').should('be.visible');
   });
 
@@ -59,9 +59,14 @@ describe('Login Flow', () => {
     cy.get('input[placeholder="Masukkan password"]').type(Cypress.env('TEST_PASSWORD') || 'password123');
     cy.get('button[type="submit"]').click();
 
-    cy.url().should('eq', Cypress.config('baseUrl') + '/');
+    cy.url().should('eq', `${Cypress.config('baseUrl')  }/`);
 
-    cy.contains('Logout').click();
+    // Tunggu navbar muncul dan avatar user tampil (tanda sudah login)
+    cy.get('nav').should('be.visible');
+
+    // Klik tombol logout via title attribute (lebih reliable dari text yang hidden di mobile)
+    cy.get('button[title="Keluar"]').should('be.visible').click();
+
     cy.url().should('include', '/login');
   });
 });
