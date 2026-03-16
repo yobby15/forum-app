@@ -61,10 +61,8 @@ describe('Login Flow', () => {
 
     cy.url().should('eq', `${Cypress.config('baseUrl')  }/`);
 
-    // Tunggu navbar muncul dan avatar user tampil (tanda sudah login)
     cy.get('nav').should('be.visible');
 
-    // Klik tombol logout via title attribute (lebih reliable dari text yang hidden di mobile)
     cy.get('button[title="Keluar"]').should('be.visible').click();
 
     cy.url().should('include', '/login');

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import useInput from '../hooks/useInput';
 import AuthInput from './AuthInput';
@@ -11,6 +11,7 @@ const LoginForm = () => {
   const [errors, setErrors] = useState({});
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const authUser = useSelector((state) => state.authUser);
 
   const validate = () => {
     const newErrors = {};
@@ -27,7 +28,7 @@ const LoginForm = () => {
     return newErrors;
   };
 
-  const onLogin = (e) => {
+  const onLogin = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
@@ -35,9 +36,13 @@ const LoginForm = () => {
       return;
     }
     setErrors({});
-    dispatch(asyncSetAuthUser({ email, password }));
-    navigate('/');
+    await dispatch(asyncSetAuthUser({ email, password }));
   };
+
+  if (authUser) {
+    navigate('/');
+    return null;
+  }
 
   return (
     <form className="space-y-5" onSubmit={onLogin}>
